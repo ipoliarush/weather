@@ -17,16 +17,23 @@
         </div>
       </form>
     </div>
-    <div class="box">
-      <p class="sity">{{ weather.name }}, {{ country }}</p>
-      <p class="date">{{ newDate }}</p>
-      <div class="temp">
-        <p class="temp__text">{{ Math.round(temp) }}&#176;c</p>
+    <transition name="fade" mode="out-in">
+      <div v-if="weather" v-cloak class="box">
+        <p class="sity">{{ weather.name }}, {{ weather.sys.country }}</p>
+        <p class="date">{{ newDate }}</p>
+        <div class="temp">
+          <p class="temp__text">{{ Math.round(weather.main.temp) }}&#176;c</p>
+        </div>
+        <p class="precipitation">
+          {{ weather.weather[0].description }}
+        </p>
       </div>
-      <p class="precipitation">
-        {{ precipitation }}
-      </p>
-    </div>
+      <div v-else class="box">
+        <p class="date">
+          Выберите город или разрешите определение вашей геолокации
+        </p>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -39,45 +46,47 @@ export default {
     apiKey: "a6615e60438fe4856be0e8b1bb030fdd",
     apiUrl: "https:/api.openweathermap.org/data/2.5/weather",
     query: "",
-    weather: "",
+    weather: null,
     precipitation: "",
     temp: "",
+    newThis: "",
     pre: [
       { en: "broken clouds", ru: "небольшая облачность" },
       { en: "overcast clouds", ru: "пасмурно" },
+      { en: "light rain", ru: "легкий дождь" },
     ],
 
     country: "",
   }),
 
   mounted() {
-    axios
-      .get(`${this.apiUrl}?q=Bucha,UA&units=metric&appid=${this.apiKey}`)
-      .then((resp) => {
-        this.weather = resp.data;
-        this.country = resp.data.sys.country;
-        this.precipitation = resp.data.weather[0].description;
-        this.temp = resp.data.main.temp;
-      })
-      .catch((error) => console.log(error));
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        this.getGeolocation(pos.coords.latitude, pos.coords.longitude);
+      });
+    }
   },
   methods: {
     search(e) {
       if (e.key === "Enter") {
-        axios
-          .get(
-            `${this.apiUrl}?q=${this.query}&units=metric&appid=${this.apiKey}`
-          )
-          .then((resp) => {
-            this.weather = resp.data;
-            this.country = resp.data.sys.country;
-            this.precipitation = resp.data.weather[0].description;
-            this.temp = resp.data.main.temp;
-          })
+        this.getMeteoByCity(this.apiUrl, this.query, this.apiKey)
+          .then((resp) => (this.weather = resp.data))
           .catch((error) => console.log(error));
-
         this.query = "";
       }
+    },
+    getGeolocation(lat, lon) {
+      this.getMeteoByCoords(this.apiUrl, lat, lon, this.apiKey)
+        .then((resp) => (this.weather = resp.data))
+        .catch((error) => console.log(error));
+    },
+    getMeteoByCity(url, city, key) {
+      return axios.get(`${url}?q=${city}&units=metric&appid=${key}`);
+    },
+    getMeteoByCoords(url, lat, lon, key) {
+      return axios.get(
+        `${url}?units=metric&lat=${lat}&lon=${lon}&appid=${key}`
+      );
     },
   },
   computed: {
@@ -114,6 +123,7 @@ export default {
       return `${day} ${date} ${month} ${year}`;
     },
   },
+  update() {},
 };
 </script>
 
@@ -140,8 +150,9 @@ export default {
     }
     .label {
       position: absolute;
-      top: 58px;
-      left: 15px;
+      top: 0;
+      left: 0;
+      transform: translate(15px, 58px);
       font-weight: 500;
       color: #fff;
       transition: 0.5s;
@@ -159,11 +170,11 @@ export default {
 
       &:not(:placeholder-shown) {
         & + .label {
-          opacity: 0;
+          transform: translate(15px, 25px);
         }
       }
 
-      &:hover &:hover {
+      &:hover {
         background: rgba(#fff, 0.7);
       }
       &:focus {
@@ -171,7 +182,7 @@ export default {
       }
       &:focus {
         & + .label {
-          opacity: 0;
+          transform: translate(15px, 25px);
         }
       }
     }
