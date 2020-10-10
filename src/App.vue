@@ -15,6 +15,16 @@
           />
           <label class="label" for="input">Город</label>
         </div>
+        <div class="topsity">
+          <a
+            v-for="(item, index) of sortTopSity"
+            :key="index"
+            href=""
+            class="name"
+            @click.prevent=""
+            >{{ item.name }}</a
+          >
+        </div>
       </form>
     </div>
     <transition name="fade" mode="out-in">
@@ -48,14 +58,44 @@ export default {
     query: "",
     weather: null,
     precipitation: "",
-    temp: "",
     newThis: "",
+    topSity: [
+      { name: "Киев", count: "10" },
+      { name: "Буча", count: "8" },
+      { name: "Мариуполь", count: "5" },
+      { name: "Розовка", count: "4" },
+      { name: "Днепр", count: "3" },
+      { name: "Харьков", count: "1" },
+    ],
     desc: [
       { en: "broken clouds", ru: "небольшая облачность" },
       { en: "overcast clouds", ru: "пасмурно" },
       { en: "light rain", ru: "легкий дождь" },
+      { en: "mist", ru: "туман" },
     ],
-
+    months: [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря",
+    ],
+    days: [
+      "Воскресенье",
+      "Понедельник",
+      "Вторник",
+      "Среда",
+      "Четверг",
+      "Пятница",
+      "Суббота",
+    ],
     country: "",
   }),
 
@@ -90,44 +130,31 @@ export default {
     },
   },
   computed: {
+    //формирование датты в читаемый вид
     newDate: function () {
       let d = new Date();
-      let months = [
-        "января",
-        "февраля",
-        "марта",
-        "апреля",
-        "мая",
-        "июня",
-        "июля",
-        "августа",
-        "сентября",
-        "октября",
-        "ноября",
-        "декабря",
-      ];
-      let days = [
-        "Воскресенье",
-        "Понедельник",
-        "Вторник",
-        "Среда",
-        "Четверг",
-        "Пятница",
-        "Суббота",
-      ];
-      let day = days[d.getDay()];
+      let day = this.days[d.getDay()];
       let date = d.getDate();
-      let month = months[d.getMonth()];
+      let month = this.months[d.getMonth()];
       let year = d.getFullYear();
 
       return `${day} ${date} ${month} ${year}`;
     },
+    //русификация состояния погоды
     preRu() {
       let value = this.weather.weather[0].description;
       this.desc.forEach((el) => {
         if (value === el.en) value = el.ru;
       });
       return value;
+    },
+
+    sortTopSity() {
+      let arr = this.topSity;
+      arr.sort(function (a, b) {
+        return b.count - a.count;
+      });
+      return arr.slice(0, 3);
     },
   },
   update() {},
@@ -155,6 +182,24 @@ export default {
       padding-top: 50px;
       font-weight: 400;
       color: #1a1a1a;
+    }
+    .topsity {
+      display: flex;
+      margin-top: 5px;
+      justify-content: center;
+
+      .name {
+        margin: 0 10px;
+        font-style: italic;
+        font-weight: 300;
+        color: rgb(233, 233, 233);
+        text-decoration: none;
+        border-bottom: 1px dotted rgb(233, 233, 233);
+        transition: 0.5s;
+        &:hover {
+          border-bottom-color: transparent;
+        }
+      }
     }
     .label {
       position: absolute;
