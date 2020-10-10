@@ -69,6 +69,7 @@ export default {
       { en: "overcast clouds", ru: "пасмурно" },
       { en: "light rain", ru: "легкий дождь" },
       { en: "mist", ru: "туман" },
+      { en: "few clouds", ru: "переменная облачность" },
     ],
 
     //Записи для формирования названий месяцев
@@ -104,8 +105,9 @@ export default {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         this.getGeolocation(pos.coords.latitude, pos.coords.longitude);
-      });
+      }, this.error);
     }
+    //Проверка наличия данных в localstorage
 
     //Проверка наличия данных в localstorage
     if (localStorage.getItem("topSity")) {
@@ -117,6 +119,24 @@ export default {
     }
   },
   methods: {
+    //В случае отказа доступа к геолокации показ результата топ города
+    error() {
+      if (localStorage.getItem("topSity")) {
+        try {
+          this.topSity = JSON.parse(localStorage.getItem("topSity"));
+        } catch (e) {
+          localStorage.removeItem("topSity");
+        }
+      }
+
+      let arr = this.topSity;
+      arr.sort(function (a, b) {
+        return b.count - a.count;
+      });
+
+      this.getMeteo(arr[0].name);
+    },
+
     //Добавление города в массив популярности topSity
     addToTopSity(sity) {
       let isHave = true;
@@ -138,29 +158,16 @@ export default {
     },
 
     useValue(e) {
-      this.getMeteoByCity(this.apiUrl, e.target.innerHTML, this.apiKey)
-        .then(
-          (resp) => (
-            (this.weather = resp.data), this.addToTopSity(this.weather.name)
-          )
-        )
-        .catch((error) => console.log(error));
+      this.getMeteo(e.target.innerHTML);
     },
     search(e) {
       if (e.key === "Enter") {
-        this.getMeteoByCity(this.apiUrl, this.query, this.apiKey)
-          .then(
-            (resp) => (
-              (this.weather = resp.data), this.addToTopSity(this.weather.name)
-            )
-          )
-          .catch((error) => console.log(error));
-
+        this.getMeteo(this.query);
         this.query = "";
       }
     },
     getGeolocation(lat, lon) {
-      this.getMeteoByCoords(this.apiUrl, lat, lon, this.apiKey)
+      this.getAxiosByCoords(this.apiUrl, lat, lon, this.apiKey)
         .then(
           (resp) => (
             (this.weather = resp.data), this.addToTopSity(this.weather.name)
@@ -168,10 +175,23 @@ export default {
         )
         .catch((error) => console.log(error));
     },
-    getMeteoByCity(url, city, key) {
+    getMeteo(sity) {
+      this.getAxiosByCity(this.apiUrl, sity, this.apiKey)
+        .then(
+          (resp) => (
+            (this.weather = resp.data), this.addToTopSity(this.weather.name)
+          )
+        )
+        .catch((error) => console.log(error));
+    },
+
+    //Запрос axios по городу
+    getAxiosByCity(url, city, key) {
       return axios.get(`${url}?q=${city}&units=metric&appid=${key}`);
     },
-    getMeteoByCoords(url, lat, lon, key) {
+
+    //Запрос axios по координатам
+    getAxiosByCoords(url, lat, lon, key) {
       return axios.get(
         `${url}?units=metric&lat=${lat}&lon=${lon}&appid=${key}`
       );
