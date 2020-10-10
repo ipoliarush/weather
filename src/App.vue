@@ -19,9 +19,9 @@
           <a
             v-for="(item, index) of sortTopSity"
             :key="index"
-            href=""
+            :href="item.name"
             class="name"
-            @click.prevent=""
+            @click.prevent="useValue"
             >{{ item.name }}</a
           >
         </div>
@@ -40,7 +40,8 @@
       </div>
       <div v-else class="box">
         <p class="date">
-          Выберите город или разрешите определение вашей геолокации
+          Введите в поиковое поля город или разрешите определение вашей
+          геолокации
         </p>
       </div>
     </transition>
@@ -59,20 +60,18 @@ export default {
     weather: null,
     precipitation: "",
     newThis: "",
-    topSity: [
-      { name: "Киев", count: "10" },
-      { name: "Буча", count: "8" },
-      { name: "Мариуполь", count: "5" },
-      { name: "Розовка", count: "4" },
-      { name: "Днепр", count: "3" },
-      { name: "Харьков", count: "1" },
-    ],
+    country: "",
+    topSity: [],
+
+    //Записи для русификации состояния погоды
     desc: [
       { en: "broken clouds", ru: "небольшая облачность" },
       { en: "overcast clouds", ru: "пасмурно" },
       { en: "light rain", ru: "легкий дождь" },
       { en: "mist", ru: "туман" },
     ],
+
+    //Записи для формирования названий месяцев
     months: [
       "января",
       "февраля",
@@ -87,6 +86,8 @@ export default {
       "ноября",
       "декабря",
     ],
+
+    //Записи для формирования названий дней недели
     days: [
       "Воскресенье",
       "Понедельник",
@@ -96,28 +97,75 @@ export default {
       "Пятница",
       "Суббота",
     ],
-    country: "",
   }),
 
   mounted() {
+    //Запрос на получение данных геолокации
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         this.getGeolocation(pos.coords.latitude, pos.coords.longitude);
       });
     }
+
+    //Проверка наличия данных в localstorage
+    if (localStorage.getItem("topSity")) {
+      try {
+        this.topSity = JSON.parse(localStorage.getItem("topSity"));
+      } catch (e) {
+        localStorage.removeItem("topSity");
+      }
+    }
   },
   methods: {
+    //Добавление города в массив популярности topSity
+    addToTopSity(sity) {
+      let isHave = true;
+      //Перебор массива на наличие города, если такой имеется увеличивается популярность, если нет добавляется новый город в массив
+      this.topSity.forEach((el) => {
+        if (sity === el.name) {
+          el.count++, (isHave = false);
+        }
+      });
+      if (isHave) this.topSity.push({ name: sity, count: 1 });
+      //новый массив передается на сохранение в localstorage
+      this.saveToStorage(this.topSity);
+    },
+
+    //Сохраняет новый массив в localstorage
+    saveToStorage(topSity) {
+      const parsed = JSON.stringify(topSity);
+      localStorage.setItem("topSity", parsed);
+    },
+
+    useValue(e) {
+      this.getMeteoByCity(this.apiUrl, e.target.innerHTML, this.apiKey)
+        .then(
+          (resp) => (
+            (this.weather = resp.data), this.addToTopSity(this.weather.name)
+          )
+        )
+        .catch((error) => console.log(error));
+    },
     search(e) {
       if (e.key === "Enter") {
         this.getMeteoByCity(this.apiUrl, this.query, this.apiKey)
-          .then((resp) => (this.weather = resp.data))
+          .then(
+            (resp) => (
+              (this.weather = resp.data), this.addToTopSity(this.weather.name)
+            )
+          )
           .catch((error) => console.log(error));
+
         this.query = "";
       }
     },
     getGeolocation(lat, lon) {
       this.getMeteoByCoords(this.apiUrl, lat, lon, this.apiKey)
-        .then((resp) => (this.weather = resp.data))
+        .then(
+          (resp) => (
+            (this.weather = resp.data), this.addToTopSity(this.weather.name)
+          )
+        )
         .catch((error) => console.log(error));
     },
     getMeteoByCity(url, city, key) {
@@ -190,8 +238,8 @@ export default {
 
       .name {
         margin: 0 10px;
-        font-style: italic;
-        font-weight: 300;
+        font-weight: 100;
+        font-size: 14px;
         color: rgb(233, 233, 233);
         text-decoration: none;
         border-bottom: 1px dotted rgb(233, 233, 233);
