@@ -25,7 +25,7 @@
           <p class="temp__text">{{ Math.round(weather.main.temp) }}&#176;c</p>
         </div>
         <p class="precipitation">
-          {{ weather.weather[0].description }}
+          {{ preRu }}
         </p>
       </div>
       <div v-else class="box">
@@ -50,7 +50,7 @@ export default {
     precipitation: "",
     temp: "",
     newThis: "",
-    pre: [
+    desc: [
       { en: "broken clouds", ru: "небольшая облачность" },
       { en: "overcast clouds", ru: "пасмурно" },
       { en: "light rain", ru: "легкий дождь" },
@@ -122,8 +122,16 @@ export default {
 
       return `${day} ${date} ${month} ${year}`;
     },
+    preRu() {
+      let value = this.weather.weather[0].description;
+      this.desc.forEach((el) => {
+        if (value === el.en) value = el.ru;
+      });
+      return value;
+    },
   },
   update() {},
+  filters: {},
 };
 </script>
 
@@ -228,6 +236,7 @@ export default {
       font-weight: 800;
       text-shadow: 1px 3px rgba(#000, 0.25);
       font-style: italic;
+      text-transform: capitalize;
     }
   }
 }
