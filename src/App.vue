@@ -55,7 +55,7 @@ export default {
   name: "App",
   data: () => ({
     apiKey: "a6615e60438fe4856be0e8b1bb030fdd",
-    apiUrl: "https:/api.openweathermap.org/data/2.5/weather",
+    apiUrl: "https://api.openweathermap.org/data/2.5/weather",
     query: "",
     weather: null,
     precipitation: "",
